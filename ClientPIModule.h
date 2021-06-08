@@ -10,16 +10,19 @@
 #include <atomic>
 #include <poll.h>
 #include <arpa/inet.h>
-#include "Command.h"
+#include <iostream>
 
 class ClientPIModule
 {
 private:
 	int client_socket;
     bool isRunning = false;
+	std::string current_path = "~/";
 public:
 	void Stop();
 	ClientPIModule(int port, std::string ip_str);
-	bool Send(std::string msg);
-
+	bool SendCommand(std::string msg);
+	void ManageReply(std::string reply);
+	void Close();
+	std::string GetPath();
 };

@@ -10,10 +10,16 @@ int main(int argc, char const *argv[])
 {
     ClientPIModule client(8080, "127.0.0.1");
     std::string text = "";
-    while(text != "quit")
+    while(true)
     {
-        std::cin >> text;
-        if(!client.Send(text))
+        std::cout << client.GetPath() + "$ ";
+        getline(std::cin, text);
+        if(text == "quit")
+        {
+            client.Close();
+            break;
+        }
+        if(!client.SendCommand(text))
             return 0;
     }
     return 0;

@@ -9,7 +9,12 @@
 #include <thread>
 #include <atomic>
 #include <poll.h>
-#include "Command.h"
+#include <iostream>
+#include <vector>
+#include <string>
+#include <map>
+#include "ClientInfo.h"
+#include "ServerDTPModule.h"
 
 class ServerPIModule
 {
@@ -18,13 +23,19 @@ private:
 	std::atomic<bool> isRunning{false};
 	struct sockaddr_in address;
 	std::vector<std::thread> threads;
+	ServerDTPModule* serverDtpModule;
+	std::map<int,ClientInfo>* clients;
 public:
-	void Start();
+	bool Start();
 	void Stop();
-	ServerPIModule(int port, std::string folderPath);
+	bool SetSocket(int port);
+	void SetClients(std::map<int,ClientInfo>* clients);
+	void ConnectWithDtp(ServerDTPModule* adress);
 private:
 	void ManageNewClient(int new_socket);
 	void ListenForConnections();
 	bool Read(int socket);
+	void ManageCommand(int socket,std::string command);
+
 
 };
