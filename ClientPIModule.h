@@ -17,6 +17,7 @@ class ClientPIModule
 private:
 	int client_socket;
     bool isRunning = false;
+	bool isLogged = false;
 	std::string current_path = "~/";
 public:
 	void Stop();

@@ -72,6 +72,43 @@ void ClientPIModule::ManageReply(std::string reply)
     {
         std::cout << reply.substr(5, reply.length()) << std::endl;
     }
+    else if(reply.find("send password ") == 0)
+    {
+        //std::cout << "oooj bedzie logowane " << std::endl;
+        if(isLogged)
+            std::cout << "You are already logged in." << std::endl;
+        else
+        {
+            std::string username = reply.substr(14, reply.length());
+            std::cout << "password: ";
+            std::string typedPassword;
+            getline(std::cin, typedPassword);
+            SendCommand("log me " + username + "\n" + typedPassword);
+        }
+    }
+    else if(reply.find("login result ") == 0)
+    {
+        std::string answer = reply.substr(13, reply.length());
+        if(answer == "You have been logged in successfully!")
+            isLogged = true;
+        std::cout << answer << std::endl;
+    }
+    else if(reply.find("logout result ") == 0)
+    {
+        isLogged = false;
+        std::cout << reply.substr(14, reply.length()) << std::endl;
+    }
+    else if(reply == "signin")
+    {
+        std::string username;
+        std::string password;
+        std::cout << "username: ";
+        getline(std::cin, username);
+        std::cout << "password: ";
+        getline(std::cin, password);
+        SendCommand("new account " + username + "\n" + password);
+    }
+
 }
 
 std::string ClientPIModule::GetPath()
