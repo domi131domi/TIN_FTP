@@ -23,7 +23,6 @@ std::string ServerDTPModule::ManageCommand(std::string command, ClientInfo* info
         return CommandCd(command.substr(3, command.length()), info);
     }
 
-<<<<<<< HEAD
     if(command.find("login ") == 0)
     {
         return CommandLogin(command.substr(6, command.length()), info);
@@ -49,11 +48,9 @@ std::string ServerDTPModule::ManageCommand(std::string command, ClientInfo* info
         return CommandCreateAccount(command.substr(12, command.length()), info);
     }
 
-=======
     if (command.find(SEND_FILE_COMMAND) == 0) {
         return CommandSend(command.substr(SEND_FILE_COMMAND.length(), command.length()), info);
     }
->>>>>>> Dodane podstawowe przesyłanie plików do serwera
     return "error command unknown";
 }
 
@@ -102,7 +99,6 @@ std::string ServerDTPModule::CommandCd(std::string path, ClientInfo* info)
     return "setPath " + info->currentRelativePath;
 }
 
-<<<<<<< HEAD
 std::string ServerDTPModule::CommandLogin(std::string username, ClientInfo* info)
 {
     std::cout << "siema loginek leci" << std::endl;
@@ -188,7 +184,6 @@ std::string ServerDTPModule::CommandCreateAccount(std::string account, ClientInf
 }
 
 
-=======
 string ServerDTPModule::CommandSend(string fileName, ClientInfo* clientInfo) {
     int sock_fd;
     struct sockaddr_in serv_addr;
@@ -283,7 +278,6 @@ long ServerDTPModule::receiveFile(int sock_fd, const string& fileName, int chunk
 
     return isError ? FILE_RECEIVE_ERR : fileSize;
 }
->>>>>>> Dodane podstawowe przesyłanie plików do serwera
 
 bool ServerDTPModule::isDirectory(std::string path)
 {
