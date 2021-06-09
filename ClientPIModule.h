@@ -11,14 +11,16 @@
 #include <poll.h>
 #include <arpa/inet.h>
 #include <iostream>
+#include "ClientDTPModule.h"
 
 class ClientPIModule
 {
 private:
 	int client_socket;
-    bool isRunning = false;
 	bool isLogged = false;
+  bool isRunning = false;
 	std::string current_path = "~/";
+	ClientDTPModule* clientDTPModule;
 public:
 	void Stop();
 	ClientPIModule(int port, std::string ip_str);
@@ -26,4 +28,5 @@ public:
 	void ManageReply(std::string reply);
 	void Close();
 	std::string GetPath();
+	void connectToDTP(ClientDTPModule* address);
 };

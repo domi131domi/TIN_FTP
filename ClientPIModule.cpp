@@ -109,9 +109,16 @@ void ClientPIModule::ManageReply(std::string reply)
         SendCommand("new account " + username + "\n" + password);
     }
 
+    else if(reply.find("hello ") == 0) {
+        clientDTPModule->proceedSend();
+    }
 }
 
 std::string ClientPIModule::GetPath()
 {
     return current_path;
+}
+
+void ClientPIModule::connectToDTP(ClientDTPModule* address) {
+    clientDTPModule = address;
 }
