@@ -1,4 +1,6 @@
 #include "ServerPIModule.h"
+#include <fstream>
+
 #define COMMANDSIZE 1024
 #define TIMEOUT 2
 
@@ -10,9 +12,15 @@ bool ServerPIModule::Start()
         return false;
     }
     threads.push_back(std::thread(&ServerPIModule::ListenForConnections, this));
-    std::cout << "Press enter to stop" << std::endl;
+    std::cout << "Type 'stop' to stop server" << std::endl;
     std::string t;
-    std::cin >> t;
+    while(t != "stop")
+    {
+        getline(std::cin, t);
+        if(t.find("register ") == 0)
+            RegisterUsername(t.substr(9, t.length()));
+
+    }
 }
 
 bool ServerPIModule::Read(int socket)
@@ -137,6 +145,34 @@ void ServerPIModule::ManageCommand(int socket,std::string command)
         reply = serverDtpModule->ManageCommand(command, &(*clients)[socket]);
     }
     send(socket, reply.c_str(), reply.length() * sizeof(char), 0);
+}
+
+void ServerPIModule::RegisterUsername(std::string username)
+{
+    std::string password;
+    std::string fileContent = "";
+    std::fstream registerFile;
+    registerFile.open(serverDtpModule->getHomePath() + "RegistrationRequests.txt", std::fstream::in);
+    std::string tmp;
+    while(registerFile >> tmp)
+    {
+        if(tmp == username)
+            registerFile >> password;
+        else
+        {
+            fileContent += tmp + " ";
+            registerFile >> tmp;    // password
+            fileContent += tmp + "\n";
+        }
+    }
+    registerFile.close();
+    registerFile.open(serverDtpModule->getHomePath() + "RegistrationRequests.txt", std::fstream::out | std::fstream::trunc);
+    registerFile << fileContent;
+    registerFile.close();
+    registerFile.open(serverDtpModule->getHomePath() + "ClientsData.txt", std::fstream::app);
+    registerFile << username << " " << password << "\n";
+    //std::string answer = "show Admin has accepted your request, " + username + "! Now you can log in using \'login\' <username> command.";
+    //send(socket, answer.c_str(), answer.length() * sizeof(char), 0);
 }
 
 void ServerPIModule::ConnectWithDtp(ServerDTPModule* adress)

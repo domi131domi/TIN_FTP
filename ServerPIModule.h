@@ -36,6 +36,7 @@ private:
 	void ListenForConnections();
 	bool Read(int socket);
 	void ManageCommand(int socket,std::string command);
+	void RegisterUsername(std::string username);
 
 
 };

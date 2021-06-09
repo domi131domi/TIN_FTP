@@ -11,6 +11,7 @@ private:
     std::string server_home_path;
 public:
     std::string ManageCommand(std::string command, ClientInfo* info);
+    std::string getHomePath() { return server_home_path; }
     void SetPath(std::string path);
 private:
     std::string CommandLs(ClientInfo* info);

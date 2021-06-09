@@ -167,10 +167,21 @@ std::string ServerDTPModule::CommandCreateAccount(std::string account, ClientInf
     std::string username = account.substr(0, endline);
     std::string password = account.substr(endline+1, account.length());
     std::fstream clientsData;
-    clientsData.open(server_home_path + "ClientsData.txt", std::fstream::app);
+    clientsData.open(server_home_path + "ClientsData.txt", std::fstream::in);
+    std::string tmp;
+    while(clientsData >> tmp)
+    {
+        //std::cout << tmp << "yy" << std::endl;
+        if(tmp == username)
+            return "error An user with this username already exists!";
+        else
+            clientsData >> tmp;
+    }
+    clientsData.close();
+    clientsData.open(server_home_path + "RegistrationRequests.txt", std::fstream::app);
     clientsData << username << " " << password << "\n";
     clientsData.close();
-    return "show Account created successfully!";
+    return "show Your request was sent to admin. You have to wait until request is accepted.";
 }
 
 
