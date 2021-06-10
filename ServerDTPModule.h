@@ -32,13 +32,15 @@ public:
 private:
     void traverseAllFilesAndCalculateCheckSums();
     std::string CommandLs(ClientInfo* info);
-    std::string CommandCd(std::string folder, ClientInfo* info);    
+    std::string CommandCd(std::string folder, ClientInfo* info);
     std::string CommandLogin(std::string username, ClientInfo* info);
     std::string CommandLogMe(std::string sentInfo, ClientInfo* info);
     std::string CommandLogout(ClientInfo* info);
     std::string CommandSignin();
     std::string CommandCreateAccount(std::string account, ClientInfo* info);
     std::string CommandSend(std::string fileName, ClientInfo* clientInfo);
+    std::string CommandMkdir(std::string directory, ClientInfo* clientInfo);
+    std::string CommandRm(std::string removed, ClientInfo* info);
     std::string CheckIfFileExists(const std::string client_sha_code);
     void handleReceive(int sock_fd);
     int receiveBuffer(int sock_fd, char* buffer, int bufferSize, int chunkSize = 4 * 1024);
