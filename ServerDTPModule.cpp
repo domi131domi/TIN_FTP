@@ -348,7 +348,7 @@ int ServerDTPModule::receiveBuffer(int sock_fd, char* buffer, int bufferSize, in
         }
         i += l;
     }
-
+    
     return i;
 }
 
@@ -406,15 +406,18 @@ int ServerDTPModule::proceedSend(int sock_fd, string fileName) {
             perror("DTP failed while executing accept()");
         };
 
-        long rc = sendFile(sock_fd, fileName);
+        long rc = sendFile(client_socket, fileName);
+        cout << "dejjj" << rc << endl;
         if (rc < 0) {
             cout << "Failed to send file: " << rc << endl;
         }
         
-        cout << "Sending file done";
+        cout << "Sending file done" << endl;
 
         close(client_socket);
         close(sock_fd);
+
+        cout << "Sending file done2" << endl;
 }
 
 bool ServerDTPModule::isDirectory(std::string path)
@@ -432,16 +435,25 @@ int ServerDTPModule::createServerSocket(int port) {
     struct sockaddr_in serv_addr;
     const int ONE_CONNECTION = 1;
 
-    if ((sock_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+    if ((sock_fd = socket(AF_INET, SOCK_STREAM, 0 )) < 0) {
         perror("DTP module failed to create a socket");
         return -1;
     };
+
+    int opt = 1;
+    if (setsockopt(sock_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt)))
+    {
+        perror("Setting options error");
+        return false;
+    }
 
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_addr.s_addr = INADDR_ANY;
     serv_addr.sin_port = htons(port);
 
-    if (bind(sock_fd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
+    int res = bind(sock_fd, (struct sockaddr *) &serv_addr, sizeof(serv_addr));
+    if (res < 0) {
+        cout << res << endl;
         perror("DTP module failed to bind address to socket");
         return -1;
     }
@@ -479,19 +491,18 @@ long ServerDTPModule::sendFile(int sock_fd, const string &fileName, int chunkSiz
     }
 
     long l = sendBuffer(sock_fd, buffer, (int) ssize);
-
     if (l < 0) {
       isError = true;
       break;
       i -= l;
     }
+    cout << "jeden" << endl;
     delete[] buffer;
-
+    cout << "dwa" << endl;
     file.close();
+    cout << "trzy  " << isError << endl;
     return isError ? FILE_SEND_ERR : fileSize;
   }
-
-  return 0;
 }
 
 long ServerDTPModule::getFileSize(const string& fileName) {

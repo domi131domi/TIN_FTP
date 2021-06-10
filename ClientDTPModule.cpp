@@ -121,6 +121,8 @@ void ClientDTPModule::handleReceive(const string &fileName)
   else {
     cout << "File receive success";
   }
+
+  close(sock_fd);
 }
 
 int ClientDTPModule::receiveBuffer(int sock_fd, char* buffer, int bufferSize, int chunkSize) {
