@@ -7,7 +7,6 @@ using std::ifstream;
 using std::endl;
 
 void ClientDTPModule::proceedSend() {
-  const int SERVER_PORT = 8081;
 
   struct sockaddr_in serv_addr = {
       .sin_family = AF_INET,
@@ -106,4 +105,6 @@ long ClientDTPModule::sendFile(int sock_fd, const string &fileName, int chunkSiz
     file.close();
     return isError ? FILE_SEND_ERR : fileSize;
   }
+
+  return 0;
 }

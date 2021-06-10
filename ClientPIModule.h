@@ -11,17 +11,21 @@
 #include <poll.h>
 #include <arpa/inet.h>
 #include <iostream>
+#include <filesystem>
 #include "ClientDTPModule.h"
+#include "FTP.h"
 
 class ClientPIModule
 {
 private:
 	int client_socket;
 	bool isLogged = false;
-  bool isRunning = false;
 	std::string current_path = "~/";
 	ClientDTPModule* clientDTPModule;
+
+	const std::string SEND_FILE_COMMAND = "send ";
 public:
+	bool isRunning = false;
 	void Stop();
 	ClientPIModule(int port, std::string ip_str);
 	bool SendCommand(std::string msg);
@@ -29,4 +33,5 @@ public:
 	void Close();
 	std::string GetPath();
 	void connectToDTP(ClientDTPModule* address);
+	bool isFileAlreadyOnServer(std::string msg);
 };

@@ -8,8 +8,17 @@
 
 int main(int argc, char const *argv[])
 {
-    ClientPIModule client(8080, "127.0.0.1");
-    ClientDTPModule dtp;
+    if(argc < 2){
+        std::cout << "Program needs a server port as an argument" << std::endl;
+        return 0;
+    }
+
+    int port = atoi(argv[1]);
+    ClientPIModule client(port, "127.0.0.1");
+    if( !client.isRunning )
+        return 0;
+
+    ClientDTPModule dtp(port);
     client.connectToDTP(&dtp);
     std::string text = "";
     std::cout <<

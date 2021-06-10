@@ -16,8 +16,9 @@
 class ClientDTPModule
 {
 private:
-
+  const int SERVER_PORT;
 public:
+  ClientDTPModule(const int port) : SERVER_PORT(port){}
   void proceedSend();
   long getFileSize(const std::string& fileName);
   int sendBuffer(int sock_fd, const char* buffer, int buffereSize, int chunkSize = 4 * 1024);

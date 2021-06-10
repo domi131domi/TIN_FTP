@@ -1,7 +1,8 @@
 #include "ServerDTPModule.h"
 #include <fstream>
+#include "FTP.h"
 
-namespace fs = std::experimental::filesystem;
+namespace fs = std::filesystem;
 
 using std::string;
 using std::thread;
@@ -48,9 +49,14 @@ std::string ServerDTPModule::ManageCommand(std::string command, ClientInfo* info
         return CommandCreateAccount(command.substr(12, command.length()), info);
     }
 
-    if (command.find(SEND_FILE_COMMAND) == 0) {
+    if(command.find(SEND_FILE_COMMAND) == 0) {
         return CommandSend(command.substr(SEND_FILE_COMMAND.length(), command.length()), info);
     }
+
+    if(command.length() == FTP::SHA256_LENGTH){
+        return CheckIfFileExists(command);
+    }
+
     return "error command unknown";
 }
 
@@ -63,6 +69,17 @@ void ServerDTPModule::SetPath(std::string path)
     server_home_path = original_path.substr(0, found+1);
     /*for (const auto& entry : fs::directory_iterator(path))
         files.push_back(entry.path().string().substr(original_path.length(), entry.path().string().length()));*/
+    traverseAllFilesAndCalculateCheckSums();
+}
+
+void ServerDTPModule::traverseAllFilesAndCalculateCheckSums(){
+    for (auto file : fs::recursive_directory_iterator(original_path)) {
+        try {
+             check_sums.push_back( FTP::SHA256(file.path().c_str()) );
+        } catch(const std::exception& e) {
+            std::cerr <<  e.what() << "\n";
+        }
+    }
 }
 
 std::string ServerDTPModule::CommandLs(ClientInfo* info)
@@ -211,6 +228,15 @@ string ServerDTPModule::CommandSend(string fileName, ClientInfo* clientInfo) {
     return "hello aaa";
 }
 
+string ServerDTPModule::CheckIfFileExists(string client_sha_code){
+    for( auto iter = check_sums.begin(); iter != check_sums.end(); ++iter){
+        if(*iter == client_sha_code)
+            return "file on server";
+    }
+
+    return "file not on server";
+}
+
 void ServerDTPModule::handleReceive(int sock_fd) {
         std::cout << sock_fd;
         printf("Waiting for connection...\n");
@@ -223,10 +249,13 @@ void ServerDTPModule::handleReceive(int sock_fd) {
             perror("DTP failed while executing accept()");
         };
 
-        long rc = receiveFile(client_socket, "sent.txt");
+        long rc = receiveFile(client_socket, "send.txt");
         if (rc < 0) {
             cout << "Failed to receive file: " << rc << endl;
+        } else {
+            cout << "File receive success";
         }
+        
 
         std::cout << "yoooo\n\n";
         shutdown(client_socket, SHUT_RDWR);
@@ -244,6 +273,8 @@ int ServerDTPModule::receiveBuffer(int sock_fd, char* buffer, int bufferSize, in
         }
         i += l;
     }
+    
+    return 1;
 }
 
 long ServerDTPModule::receiveFile(int sock_fd, const string& fileName, int chunkSize) {
