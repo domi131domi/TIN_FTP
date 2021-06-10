@@ -152,7 +152,7 @@ void ClientPIModule::ManageReply(std::string reply)
         clientDTPModule->proceedSend(std::stoi(reply.substr(10,reply.length())), file_to_send);
     }
 
-    else if(reply.find(GET_ACCEPT_RESPONSE)) {
+    else if(reply.find(GET_ACCEPT_RESPONSE) == 0) {
         clientDTPModule->handleReceive(std::stoi(reply.substr(GET_ACCEPT_RESPONSE.length() ,reply.length())), file_to_receive);
     }
 }

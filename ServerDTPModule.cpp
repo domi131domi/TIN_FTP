@@ -396,7 +396,6 @@ int ServerDTPModule::proceedSend(int sock_fd, string fileName) {
         };
 
         long rc = sendFile(client_socket, fileName);
-        cout << "dejjj" << rc << endl;
         if (rc < 0) {
             cout << "Failed to send file: " << rc << endl;
         }
@@ -484,11 +483,8 @@ long ServerDTPModule::sendFile(int sock_fd, const string &fileName, int chunkSiz
       break;
       i -= l;
     }
-    cout << "jeden" << endl;
     delete[] buffer;
-    cout << "dwa" << endl;
     file.close();
-    cout << "trzy  " << isError << endl;
     return isError ? FILE_SEND_ERR : fileSize;
   }
 }

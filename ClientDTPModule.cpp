@@ -119,7 +119,7 @@ void ClientDTPModule::handleReceive(uint16_t port, const string &fileName)
     cout << "Failed to receive file: " << rc << endl;
   }
   else {
-    cout << "File receive success";
+    cout << "File receive success" << endl;
   }
 
   close(sock_fd);
@@ -173,7 +173,7 @@ int ClientDTPModule::createClientSocket(uint16_t port) {
 
   struct sockaddr_in serv_addr = {
       .sin_family = AF_INET,
-      .sin_port = htons(port)};
+      .sin_port = port};
   if (inet_pton(AF_INET, SERVER_IP, &serv_addr.sin_addr) <= 0)
   {
     perror("DTP failed in inet_pton()");
