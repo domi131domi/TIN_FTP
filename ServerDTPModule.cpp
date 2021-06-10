@@ -57,6 +57,16 @@ std::string ServerDTPModule::ManageCommand(std::string command, ClientInfo* info
         return CheckIfFileExists(command);
     }
 
+    if(command.find("mkdir ") == 0)
+    {
+        return CommandMkdir(command.substr(6, command.length()), info);
+    }
+ 
+    if(command.find("rm ") == 0)
+    {
+        return CommandRm(command.substr(3, command.length()), info);
+    }
+
     return "error command unknown";
 }
 
@@ -118,7 +128,7 @@ std::string ServerDTPModule::CommandCd(std::string path, ClientInfo* info)
 
 std::string ServerDTPModule::CommandLogin(std::string username, ClientInfo* info)
 {
-    std::cout << "siema loginek leci" << std::endl;
+    //std::cout << "siema loginek leci" << std::endl;
     //std::cout << "otrzymany username:" + username + "kuniec" << std::endl;
     std::ifstream clientsData;
     clientsData.open(server_home_path + "ClientsData.txt", std::fstream::in);
@@ -128,11 +138,25 @@ std::string ServerDTPModule::CommandLogin(std::string username, ClientInfo* info
     std::string login;
     while(clientsData >> login)
     {
-        std::cout << login << std::endl; 
         if(login == username)
         {
             clientsData.close();
             return "send password " + username;
+        }
+        else
+        {
+            clientsData >> login;   // skip this password
+            continue;
+        }
+    }
+    clientsData.close();
+    clientsData.open(server_home_path + "RegistrationRequests.txt", std::fstream::in);
+        while(clientsData >> login)
+    { 
+        if(login == username)
+        {
+            clientsData.close();
+            return "show Your request to create account has not been accepted yet.";
         }
         else
         {
@@ -199,8 +223,21 @@ std::string ServerDTPModule::CommandCreateAccount(std::string account, ClientInf
     while(clientsData >> tmp)
     {
         //std::cout << tmp << "yy" << std::endl;
-        if(tmp == username)
+        if(tmp == username){
+            clientsData.close();
             return "error An user with this username already exists!";
+        }
+        else
+            clientsData >> tmp;
+    }
+    clientsData.close();
+    clientsData.open(server_home_path + "RegistrationRequests.txt", std::fstream::in);
+    while(clientsData >> tmp)
+    {
+        //std::cout << tmp << "yy" << std::endl;
+        if(tmp == username){
+            return "error An user with this username already exists!";
+        }
         else
             clientsData >> tmp;
     }
@@ -237,6 +274,24 @@ string ServerDTPModule::CommandSend(string fileName, ClientInfo* clientInfo) {
     threads.push_back(thread(&ServerDTPModule::handleReceive, this, sock_fd));
     std::cout << sock_fd;
     return "hello aaa";
+}
+
+std::string ServerDTPModule::CommandMkdir(std::string folderName, ClientInfo* info) {
+    if(isDirectory(original_path + info->currentRelativePath + folderName + '/'))
+        return "error Such forler already exists in this directory.";
+
+    if(isFile(original_path + info->currentRelativePath + folderName))
+        return "error You cannot create folder named same as file in this context.";
+
+    else if(fs::create_directory(original_path + info->currentRelativePath + folderName + '/'))
+            return "show Folder created.";
+
+    return "error Error in creating new directory.";
+}
+
+std::string ServerDTPModule::CommandRm(std::string removed, ClientInfo* info) {
+    std::uintmax_t n = fs::remove_all(original_path + info->currentRelativePath + removed);
+    return "show Removed " + std::to_string(n) + " files or directories.";
 }
 
 string ServerDTPModule::CheckIfFileExists(string client_sha_code){
