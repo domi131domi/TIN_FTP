@@ -6,11 +6,10 @@ using std::min;
 using std::ifstream;
 using std::endl;
 
-void ClientDTPModule::proceedSend() {
-
+void ClientDTPModule::proceedSend(uint16_t port) {
   struct sockaddr_in serv_addr = {
       .sin_family = AF_INET,
-      .sin_port = htons(SERVER_PORT)};
+      .sin_port = port};
   if (inet_pton(AF_INET, SERVER_IP, &serv_addr.sin_addr) <= 0)
   {
     perror("DTP failed in inet_pton()");

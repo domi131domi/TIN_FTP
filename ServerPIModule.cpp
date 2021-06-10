@@ -3,6 +3,7 @@
 #include "FTP.h"
 #define COMMANDSIZE 1024
 #define TIMEOUT 2
+#define MAX_CLIENTS 3
 
 bool ServerPIModule::Start()
 {
@@ -21,6 +22,7 @@ bool ServerPIModule::Start()
             RegisterUsername(t.substr(9, t.length()));
 
     }
+    return true;
 }
 
 bool ServerPIModule::Read(int socket)
@@ -62,7 +64,7 @@ bool ServerPIModule::SetSocket(int port)
         perror("Binding error");
         return false;
     }
-    if (listen(server_fd, 3) < 0)
+    if (listen(server_fd, MAX_CLIENTS) < 0)
     {
         perror("Listen error");
         return false;
