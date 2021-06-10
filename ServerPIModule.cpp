@@ -1,6 +1,6 @@
 #include "ServerPIModule.h"
 #include <fstream>
-
+#include "FTP.h"
 #define COMMANDSIZE 1024
 #define TIMEOUT 2
 
@@ -25,17 +25,14 @@ bool ServerPIModule::Start()
 
 bool ServerPIModule::Read(int socket)
 {
-    char msg[COMMANDSIZE];
-    int val = read(socket, msg, COMMANDSIZE);
-    std::string str(msg);
-    str = str.substr(0,val);
-    if(val <= 0)
-    {
-        std::cout << "Connection lost from client nr: " << socket << std::endl;
+    std::string reply = FTP::Read(socket);
+    if( reply.length() == 0 ){
+        std::cout << "User nr: " << socket << " disconnected" << std::endl;
         return false;
     }
-    std::cout << "Got command from user nr: " << socket << " " << str << std::endl;
-    ManageCommand(socket,str);
+
+    std::cout << "Got command from user nr: " << socket << " " << reply << std::endl;
+    ManageCommand(socket,reply);
     return true;
 }
 
@@ -71,6 +68,8 @@ bool ServerPIModule::SetSocket(int port)
         return false;
     }
     isRunning = true;
+
+    return true;
 }
 
 void ServerPIModule::ListenForConnections()
@@ -144,7 +143,7 @@ void ServerPIModule::ManageCommand(int socket,std::string command)
     {
         reply = serverDtpModule->ManageCommand(command, &(*clients)[socket]);
     }
-    send(socket, reply.c_str(), reply.length() * sizeof(char), 0);
+    FTP::Send(socket, reply.c_str());
 }
 
 void ServerPIModule::RegisterUsername(std::string username)

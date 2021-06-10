@@ -1,5 +1,6 @@
 #include "ClientPIModule.h"
-#define REPLYSIZE 1024
+
+namespace fs = std::filesystem;
 
 ClientPIModule::ClientPIModule(int port, std::string ip_str)
 {
@@ -32,25 +33,51 @@ bool ClientPIModule::SendCommand(std::string msg)
 {
     if(!isRunning)
         return false;
-    int val = send(client_socket, msg.c_str(), msg.length() * sizeof(char), 0);
-    if(val < 0)
-    {
-        std::cout << "Connection lost" << std::endl;
-        close(client_socket);
+
+    if( msg.find("send") == 0 && isFileAlreadyOnServer(msg) )
+        return true;
+
+    if( !FTP::Send(client_socket, msg) )
         return false;
+
+    std::string reply = FTP::Read(client_socket);
+    if( reply.length() == 0 )
+        return false;
+
+    ManageReply(reply);
+    return true;
+}
+
+bool ClientPIModule::isFileAlreadyOnServer(std::string msg){
+    bool ERROR_OCCURED = false;
+    std::string file_name = msg.erase(0, SEND_FILE_COMMAND.length() );
+    file_name.erase(0, file_name.find_first_not_of(' '));
+
+    if( !fs::is_regular_file(file_name) ){
+        std::cout << "File doesn't exists!\n";
+        return true;
     }
 
-    char Replymsg[REPLYSIZE];
-    val = read(client_socket, Replymsg, REPLYSIZE);
-    std::string str(Replymsg);
-    str = str.substr(0,val);
-    if(val <= 0)
-    {
-        std::cout << "Connection lost" << std::endl;
-        return false;
+    std::string file_sha256;
+    try{
+        file_sha256 = FTP::SHA256( file_name.c_str() );
+    } catch (const std::exception& e) {
+        std::cerr <<  e.what() << "\n";
     }
-    ManageReply(str);
-    return true;
+
+    if( !FTP::Send(client_socket, file_sha256.c_str()) )
+       throw ERROR_OCCURED;
+
+    std::string reply = FTP::Read(client_socket);
+    if( reply == "" )
+        throw ERROR_OCCURED;
+
+    if( reply == "file on server" ){
+        std::cout << "The same file is already on server\n";
+        return true;
+    }
+
+    return false;
 }
 
 void ClientPIModule::Close()
@@ -109,9 +136,16 @@ void ClientPIModule::ManageReply(std::string reply)
         SendCommand("new account " + username + "\n" + password);
     }
 
+    else if(reply.find("hello ") == 0) {
+        clientDTPModule->proceedSend();
+    }
 }
 
 std::string ClientPIModule::GetPath()
 {
     return current_path;
+}
+
+void ClientPIModule::connectToDTP(ClientDTPModule* address) {
+    clientDTPModule = address;
 }
