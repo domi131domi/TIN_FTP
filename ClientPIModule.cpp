@@ -2,6 +2,8 @@
 
 namespace fs = std::filesystem;
 
+using std::string;
+
 ClientPIModule::ClientPIModule(int port, std::string ip_str)
 {
     struct sockaddr_in serv_addr;
@@ -36,8 +38,16 @@ bool ClientPIModule::SendCommand(std::string msg)
     if(!isRunning)
         return false;
 
-    if( msg.find("send") == 0 && isFileAlreadyOnServer(msg) )
-        return true;
+    if( msg.find(SEND_FILE_COMMAND) == 0 ) {
+        if (isFileAlreadyOnServer(msg) )
+            return true;
+        
+        file_to_send = msg.substr(SEND_FILE_COMMAND.length(), msg.length());
+    }
+
+    if ( msg.find(GET_FILE_COMMAND) == 0 ) {
+        file_to_receive = msg.substr(GET_FILE_COMMAND.length(), msg.length());
+    }
 
     if( !FTP::Send(client_socket, msg) )
         return false;
@@ -139,7 +149,11 @@ void ClientPIModule::ManageReply(std::string reply)
     }
 
     else if(reply.find("ConnectTo ") == 0) {
-        clientDTPModule->proceedSend(std::stoi(reply.substr(10,reply.length())));
+        clientDTPModule->proceedSend(std::stoi(reply.substr(10,reply.length())), file_to_send);
+    }
+
+    else if(reply.find(GET_ACCEPT_RESPONSE)) {
+        clientDTPModule->handleReceive(file_to_receive);
     }
 }
 

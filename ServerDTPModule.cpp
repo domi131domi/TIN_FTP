@@ -8,6 +8,7 @@ using std::string;
 using std::thread;
 using std::min;
 using std::ofstream;
+using std::ifstream;
 using std::cout;
 using std::endl;
 
@@ -67,6 +68,9 @@ std::string ServerDTPModule::ManageCommand(std::string command, ClientInfo* info
         return CommandRm(command.substr(3, command.length()), info);
     }
 
+    if (command.find(GET_FILE_COMMAND) == 0) {
+        return CommandGet(command.substr(GET_FILE_COMMAND.length(), command.length()), info);
+    }
     return "error command unknown";
 }
 
@@ -249,7 +253,7 @@ std::string ServerDTPModule::CommandCreateAccount(std::string account, ClientInf
 }
 
 
-string ServerDTPModule::CommandSend(string fileName, ClientInfo* clientInfo) {
+string ServerDTPModule::CommandSend(const string& fileName, ClientInfo* clientInfo) {
     int sock_fd;
     struct sockaddr_in serv_addr;
     int port = 0;
@@ -279,8 +283,9 @@ string ServerDTPModule::CommandSend(string fileName, ClientInfo* clientInfo) {
 
     listen(sock_fd, ONE_CONNECTION);
 
-    threads.push_back(thread(&ServerDTPModule::handleReceive, this, sock_fd));
-    std::cout << sock_fd;
+    const string fullFilePath = original_path + clientInfo->currentRelativePath + fileName;
+    threads.push_back(thread(&ServerDTPModule::handleReceive, this, sock_fd, fullFilePath));
+
     return "ConnectTo " + std::to_string(add.sin_port);
 }
 
@@ -311,19 +316,18 @@ string ServerDTPModule::CheckIfFileExists(string client_sha_code){
     return "file not on server";
 }
 
-void ServerDTPModule::handleReceive(int sock_fd) {
-        std::cout << sock_fd;
+void ServerDTPModule::handleReceive(int sock_fd, const string fileName) {
         printf("Waiting for connection...\n");
 
         struct sockaddr_in client_addr;
         size_t client_len = sizeof(client_addr);
-        std::cout << "nie yoo\n\n";
+
         int client_socket;
         if ((client_socket = accept(sock_fd, (struct sockaddr*) &client_addr, (socklen_t*) &client_len)) < 0) {
             perror("DTP failed while executing accept()");
         };
 
-        long rc = receiveFile(client_socket, "send.txt");
+        long rc = receiveFile(client_socket, fileName);
         if (rc < 0) {
             cout << "Failed to receive file: " << rc << endl;
         } else {
@@ -331,9 +335,6 @@ void ServerDTPModule::handleReceive(int sock_fd) {
         }
 
 
-        std::cout << "yoooo\n\n";
-        shutdown(client_socket, SHUT_RDWR);
-        shutdown(sock_fd, SHUT_RDWR);
         close(client_socket);
         close(sock_fd);
 }
@@ -348,7 +349,7 @@ int ServerDTPModule::receiveBuffer(int sock_fd, char* buffer, int bufferSize, in
         i += l;
     }
 
-    return 1;
+    return i;
 }
 
 long ServerDTPModule::receiveFile(int sock_fd, const string& fileName, int chunkSize) {
@@ -363,8 +364,6 @@ long ServerDTPModule::receiveFile(int sock_fd, const string& fileName, int chunk
                       sizeof(fileSize)) != sizeof(fileSize)) {
         return FILE_LENGTH_RECV_ERR;
     }
-
-    cout << "jest" << endl;
 
     char* buffer = new char[chunkSize];
     bool isError = false;
@@ -384,6 +383,40 @@ long ServerDTPModule::receiveFile(int sock_fd, const string& fileName, int chunk
     return isError ? FILE_RECEIVE_ERR : fileSize;
 }
 
+string ServerDTPModule::CommandGet(const string& fileName, ClientInfo* clientInfo) {
+    int sock_fd = createServerSocket(8082);
+    if (sock_fd < 0) {
+        return "error Could not create server socket";
+    }
+
+    const string fullFilePath = original_path + clientInfo->currentRelativePath + fileName;
+    threads.push_back(thread(&ServerDTPModule::proceedSend, this, sock_fd, fullFilePath));
+    
+    return GET_ACCEPT_RESPONSE + ';' + fileName;
+}
+
+int ServerDTPModule::proceedSend(int sock_fd, string fileName) {
+        printf("Waiting for connection...\n");
+
+        struct sockaddr_in client_addr;
+        size_t client_len = sizeof(client_addr);
+
+        int client_socket;
+        if ((client_socket = accept(sock_fd, (struct sockaddr*) &client_addr, (socklen_t*) &client_len)) < 0) {
+            perror("DTP failed while executing accept()");
+        };
+
+        long rc = sendFile(sock_fd, fileName);
+        if (rc < 0) {
+            cout << "Failed to send file: " << rc << endl;
+        }
+        
+        cout << "Sending file done";
+
+        close(client_socket);
+        close(sock_fd);
+}
+
 bool ServerDTPModule::isDirectory(std::string path)
 {
     return fs::is_directory(fs::status(path));
@@ -392,4 +425,99 @@ bool ServerDTPModule::isDirectory(std::string path)
 bool ServerDTPModule::isFile(std::string path)
 {
     return fs::is_regular_file(fs::status(path));
+}
+
+int ServerDTPModule::createServerSocket(int port) {
+    int sock_fd;
+    struct sockaddr_in serv_addr;
+    const int ONE_CONNECTION = 1;
+
+    if ((sock_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+        perror("DTP module failed to create a socket");
+        return -1;
+    };
+
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_addr.s_addr = INADDR_ANY;
+    serv_addr.sin_port = htons(port);
+
+    if (bind(sock_fd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
+        perror("DTP module failed to bind address to socket");
+        return -1;
+    }
+
+    listen(sock_fd, ONE_CONNECTION);
+
+    return sock_fd;
+}
+
+long ServerDTPModule::sendFile(int sock_fd, const string &fileName, int chunkSize) {
+  const long fileSize = getFileSize(fileName);
+  if (fileSize < 0){
+    return FILE_OPEN_ERR;
+  }
+
+  ifstream file(fileName, ifstream::in);
+  if (file.fail()) {
+    return FILE_OPEN_ERR;
+  }
+
+  int sentBytes = sendBuffer(sock_fd, reinterpret_cast<const char *>(&fileSize), sizeof(fileSize));
+  if (sentBytes != sizeof(fileSize)) {
+    return FILE_LENGTH_READ_ERR;
+  }
+
+  char* buffer = new char[chunkSize];
+  bool isError = false;
+  long i = fileSize;
+  while(i != 0) {
+    const long ssize = min(i, (long) chunkSize);
+
+    if (!file.read(buffer, ssize)) {
+      isError = true;
+      break;
+    }
+
+    long l = sendBuffer(sock_fd, buffer, (int) ssize);
+
+    if (l < 0) {
+      isError = true;
+      break;
+      i -= l;
+    }
+    delete[] buffer;
+
+    file.close();
+    return isError ? FILE_SEND_ERR : fileSize;
+  }
+
+  return 0;
+}
+
+long ServerDTPModule::getFileSize(const string& fileName) {
+  FILE* pFile;
+  long size = -1;
+
+  pFile = fopen(fileName.c_str(), "rb");
+  if (pFile != nullptr) {
+    fseek(pFile, 0, SEEK_END);
+    size = ftell(pFile);
+    fclose(pFile);
+  } else {
+    perror ("Error opening file");
+  }
+
+  return size;
+}
+
+int ServerDTPModule::sendBuffer(int sock_fd, const char* buffer, int bufferSize, int chunkSize) {
+  int i = 0;
+  while (i < bufferSize) {
+    const int l = send(sock_fd, &buffer[i], min(chunkSize, bufferSize - i), 0);
+    if (l < 0) {
+      return -1;
+    }
+    i += l;
+  }
+  return i;
 }
