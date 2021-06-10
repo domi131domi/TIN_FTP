@@ -136,8 +136,8 @@ void ClientPIModule::ManageReply(std::string reply)
         SendCommand("new account " + username + "\n" + password);
     }
 
-    else if(reply.find("hello ") == 0) {
-        clientDTPModule->proceedSend();
+    else if(reply.find("ConnectTo ") == 0) {
+        clientDTPModule->proceedSend(std::stoi(reply.substr(10,reply.length())));
     }
 }
 

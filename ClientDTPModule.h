@@ -19,7 +19,7 @@ private:
   const int SERVER_PORT;
 public:
   ClientDTPModule(const int port) : SERVER_PORT(port){}
-  void proceedSend();
+  void proceedSend(uint16_t port);
   long getFileSize(const std::string& fileName);
   int sendBuffer(int sock_fd, const char* buffer, int buffereSize, int chunkSize = 4 * 1024);
   long sendFile(int sock_fd, const std::string& fileName, int chunkSize = 64 * 1024);

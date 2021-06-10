@@ -128,7 +128,7 @@ std::string ServerDTPModule::CommandLogin(std::string username, ClientInfo* info
     std::string login;
     while(clientsData >> login)
     {
-        std::cout << login << std::endl; 
+        std::cout << login << std::endl;
         if(login == username)
         {
             clientsData.close();
@@ -168,7 +168,7 @@ std::string ServerDTPModule::CommandLogMe(std::string sentInfo, ClientInfo* info
             {
                 clientsData.close();
                 return "login result Invalid password.";
-            }         
+            }
         }
         else
             clientsData >> login;
@@ -215,7 +215,7 @@ std::string ServerDTPModule::CommandCreateAccount(std::string account, ClientInf
 string ServerDTPModule::CommandSend(string fileName, ClientInfo* clientInfo) {
     int sock_fd;
     struct sockaddr_in serv_addr;
-    int port = 8081;
+    int port = 0;
     const int ONE_CONNECTION = 1;
 
     if ((sock_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
@@ -232,11 +232,19 @@ string ServerDTPModule::CommandSend(string fileName, ClientInfo* clientInfo) {
         return nullptr;
     }
 
+    struct sockaddr_in add;
+    size_t add_len = sizeof(add);
+    if(getsockname(sock_fd, (struct sockaddr *)&add,  (socklen_t*) &add_len) != 0)
+    {
+        perror("DTP modeule failed binding socket");
+        return nullptr;
+    }
+
     listen(sock_fd, ONE_CONNECTION);
-    
+
     threads.push_back(thread(&ServerDTPModule::handleReceive, this, sock_fd));
     std::cout << sock_fd;
-    return "hello aaa";
+    return "ConnectTo " + std::to_string(add.sin_port);
 }
 
 string ServerDTPModule::CheckIfFileExists(string client_sha_code){
@@ -266,7 +274,7 @@ void ServerDTPModule::handleReceive(int sock_fd) {
         } else {
             cout << "File receive success";
         }
-        
+
 
         std::cout << "yoooo\n\n";
         shutdown(client_socket, SHUT_RDWR);
@@ -284,7 +292,7 @@ int ServerDTPModule::receiveBuffer(int sock_fd, char* buffer, int bufferSize, in
         }
         i += l;
     }
-    
+
     return 1;
 }
 
@@ -295,8 +303,8 @@ long ServerDTPModule::receiveFile(int sock_fd, const string& fileName, int chunk
     }
 
     long fileSize;
-    if (receiveBuffer(sock_fd, 
-                      reinterpret_cast<char*>(&fileSize), 
+    if (receiveBuffer(sock_fd,
+                      reinterpret_cast<char*>(&fileSize),
                       sizeof(fileSize)) != sizeof(fileSize)) {
         return FILE_LENGTH_RECV_ERR;
     }
