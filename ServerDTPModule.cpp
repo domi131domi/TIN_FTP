@@ -308,60 +308,15 @@ void ServerDTPModule::handleReceive(int sock_fd, const string fileName) {
             perror("DTP failed while executing accept()");
         };
 
-        long rc = receiveFile(client_socket, fileName);
+        long rc = FTP::receiveFile(client_socket, fileName);
         if (rc < 0) {
             cout << "Failed to receive file: " << rc << endl;
         } else {
             cout << "File receive success";
         }
 
-
         close(client_socket);
         close(sock_fd);
-}
-
-int ServerDTPModule::receiveBuffer(int sock_fd, char* buffer, int bufferSize, int chunkSize) {
-    int i = 0;
-    while (i < bufferSize) {
-        const int l = recv(sock_fd, &buffer[i], min(chunkSize, bufferSize - i), 0);
-        if (l < 0) {
-            return -1;
-        }
-        i += l;
-    }
-    
-    return i;
-}
-
-long ServerDTPModule::receiveFile(int sock_fd, const string& fileName, int chunkSize) {
-    ofstream file(fileName, ofstream::out);
-    if (file.fail()) {
-        return FILE_OPEN_ERR;
-    }
-
-    long fileSize;
-    if (receiveBuffer(sock_fd,
-                      reinterpret_cast<char*>(&fileSize),
-                      sizeof(fileSize)) != sizeof(fileSize)) {
-        return FILE_LENGTH_RECV_ERR;
-    }
-
-    char* buffer = new char[chunkSize];
-    bool isError = false;
-    long i = fileSize;
-    while (i != 0) {
-        const int r = receiveBuffer(sock_fd, buffer, (int) min(i, (long) chunkSize));
-        if ((r < 0) || !file.write(buffer, r)) {
-            isError = true;
-            break;
-        }
-        i -= r;
-    }
-    delete[] buffer;
-
-    file.close();
-
-    return isError ? FILE_RECEIVE_ERR : fileSize;
 }
 
 string ServerDTPModule::CommandGet(const string& fileName, ClientInfo* clientInfo) {
@@ -384,7 +339,7 @@ string ServerDTPModule::CommandGet(const string& fileName, ClientInfo* clientInf
     return GET_ACCEPT_RESPONSE + std::to_string(add.sin_port);
 }
 
-int ServerDTPModule::proceedSend(int sock_fd, string fileName) {
+void ServerDTPModule::proceedSend(int sock_fd, string fileName) {
         printf("Waiting for connection...\n");
 
         struct sockaddr_in client_addr;
@@ -395,7 +350,7 @@ int ServerDTPModule::proceedSend(int sock_fd, string fileName) {
             perror("DTP failed while executing accept()");
         };
 
-        long rc = sendFile(client_socket, fileName);
+        long rc = FTP::sendFile(client_socket, fileName);
         if (rc < 0) {
             cout << "Failed to send file: " << rc << endl;
         }
@@ -448,71 +403,4 @@ int ServerDTPModule::createServerSocket() {
     listen(sock_fd, ONE_CONNECTION);
     
     return sock_fd;
-}
-
-long ServerDTPModule::sendFile(int sock_fd, const string &fileName, int chunkSize) {
-  const long fileSize = getFileSize(fileName);
-  if (fileSize < 0){
-    return FILE_OPEN_ERR;
-  }
-
-  ifstream file(fileName, ifstream::in);
-  if (file.fail()) {
-    return FILE_OPEN_ERR;
-  }
-
-  int sentBytes = sendBuffer(sock_fd, reinterpret_cast<const char *>(&fileSize), sizeof(fileSize));
-  if (sentBytes != sizeof(fileSize)) {
-    return FILE_LENGTH_READ_ERR;
-  }
-
-  char* buffer = new char[chunkSize];
-  bool isError = false;
-  long i = fileSize;
-  while(i != 0) {
-    const long ssize = min(i, (long) chunkSize);
-
-    if (!file.read(buffer, ssize)) {
-      isError = true;
-      break;
-    }
-
-    long l = sendBuffer(sock_fd, buffer, (int) ssize);
-    if (l < 0) {
-      isError = true;
-      break;
-      i -= l;
-    }
-    delete[] buffer;
-    file.close();
-    return isError ? FILE_SEND_ERR : fileSize;
-  }
-}
-
-long ServerDTPModule::getFileSize(const string& fileName) {
-  FILE* pFile;
-  long size = -1;
-
-  pFile = fopen(fileName.c_str(), "rb");
-  if (pFile != nullptr) {
-    fseek(pFile, 0, SEEK_END);
-    size = ftell(pFile);
-    fclose(pFile);
-  } else {
-    perror ("Error opening file");
-  }
-
-  return size;
-}
-
-int ServerDTPModule::sendBuffer(int sock_fd, const char* buffer, int bufferSize, int chunkSize) {
-  int i = 0;
-  while (i < bufferSize) {
-    const int l = send(sock_fd, &buffer[i], min(chunkSize, bufferSize - i), 0);
-    if (l < 0) {
-      return -1;
-    }
-    i += l;
-  }
-  return i;
 }
