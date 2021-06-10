@@ -255,7 +255,6 @@ std::string ServerDTPModule::CommandCreateAccount(std::string account, ClientInf
 
 string ServerDTPModule::CommandSend(const string& fileName, ClientInfo* clientInfo) {
     int sock_fd = createServerSocket();
-
     struct sockaddr_in add;
     size_t add_len = sizeof(add);
     if(getsockname(sock_fd, (struct sockaddr *)&add,  (socklen_t*) &add_len) != 0)
@@ -265,6 +264,10 @@ string ServerDTPModule::CommandSend(const string& fileName, ClientInfo* clientIn
     }
 
     const string fullFilePath = original_path + clientInfo->currentRelativePath + fileName;
+    if( isDirectory(fullFilePath) ){
+        return "error Sending directories is forbidden";
+    }
+
     threads.push_back(thread(&ServerDTPModule::handleReceive, this, sock_fd, fullFilePath));
 
     return "ConnectTo " + std::to_string(add.sin_port);
@@ -284,8 +287,40 @@ std::string ServerDTPModule::CommandMkdir(std::string folderName, ClientInfo* in
 }
 
 std::string ServerDTPModule::CommandRm(std::string removed, ClientInfo* info) {
-    std::uintmax_t n = fs::remove_all(original_path + info->currentRelativePath + removed);
-    return "show Removed " + std::to_string(n) + " files or directories.";
+    const string fullFilePath = original_path + info->currentRelativePath + removed;
+    if( isFile(fullFilePath) ){
+        std::string sha256 = FTP::SHA256(fullFilePath.c_str());
+        auto position = std::find(check_sums.begin(), check_sums.end(), sha256);
+        if( position != check_sums.end() ){
+            check_sums.erase( position );
+        }
+        fs::remove( fullFilePath );
+        return "show File was successfuly removed";
+    }
+
+    else if ( isDirectory(fullFilePath) ){
+        try {
+            for (auto file : fs::recursive_directory_iterator(fullFilePath)) {
+                std::string sha256 = FTP::SHA256(file.path().c_str());
+                auto position = std::find(check_sums.begin(), check_sums.end(), sha256);
+                if( position != check_sums.end() ){
+                    check_sums.erase( position );
+                }
+            }    
+        } catch(const std::exception& e) {
+            std::cerr <<  e.what() << "\n";
+            return "error There was a problem during managing command";
+        }
+
+        std::uintmax_t n = fs::remove_all(fullFilePath);
+        return "show Removed " + std::to_string(n) + " files or directories.";
+    }
+
+    else{
+        return "error There is no such file in directory";
+    }
+
+    
 }
 
 string ServerDTPModule::CheckIfFileExists(string client_sha_code){
@@ -313,6 +348,7 @@ void ServerDTPModule::handleReceive(int sock_fd, const string fileName) {
             cout << "Failed to receive file: " << rc << endl;
         } else {
             cout << "File receive success";
+            check_sums.push_back( FTP::SHA256(fileName.c_str()) );
         }
 
         close(client_socket);
@@ -325,6 +361,11 @@ string ServerDTPModule::CommandGet(const string& fileName, ClientInfo* clientInf
         return "error Could not create server socket";
     }
 
+    const string fullFilePath = original_path + clientInfo->currentRelativePath + fileName;
+    if( isDirectory(fullFilePath) ){
+        return "error Getting directories is forbidden";
+    }
+
     struct sockaddr_in add;
     size_t add_len = sizeof(add);
     if(getsockname(sock_fd, (struct sockaddr *)&add,  (socklen_t*) &add_len) != 0)
@@ -333,7 +374,7 @@ string ServerDTPModule::CommandGet(const string& fileName, ClientInfo* clientInf
         return nullptr;
     }
 
-    const string fullFilePath = original_path + clientInfo->currentRelativePath + fileName;
+    
     threads.push_back(thread(&ServerDTPModule::proceedSend, this, sock_fd, fullFilePath));
     
     return GET_ACCEPT_RESPONSE + std::to_string(add.sin_port);
