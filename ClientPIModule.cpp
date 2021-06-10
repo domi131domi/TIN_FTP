@@ -14,6 +14,8 @@ ClientPIModule::ClientPIModule(int port, std::string ip_str)
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_port = htons(port);
 
+    if(ip_str == "0" || ip_str == "localhost")
+        ip_str = LOCALHOST;
     if(inet_pton(AF_INET, ip_str.c_str(), &serv_addr.sin_addr)<=0)
     {
         perror("Invalid adress");

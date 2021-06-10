@@ -14,6 +14,7 @@
 #include <filesystem>
 #include "ClientDTPModule.h"
 #include "FTP.h"
+#define LOCALHOST "127.0.0.1"
 
 class ClientPIModule
 {

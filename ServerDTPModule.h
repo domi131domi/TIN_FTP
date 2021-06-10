@@ -32,7 +32,7 @@ public:
 private:
     void traverseAllFilesAndCalculateCheckSums();
     std::string CommandLs(ClientInfo* info);
-    std::string CommandCd(std::string folder, ClientInfo* info);    
+    std::string CommandCd(std::string folder, ClientInfo* info);
     std::string CommandLogin(std::string username, ClientInfo* info);
     std::string CommandLogMe(std::string sentInfo, ClientInfo* info);
     std::string CommandLogout(ClientInfo* info);
