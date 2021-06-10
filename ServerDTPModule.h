@@ -27,8 +27,7 @@ private:
     const std::string SEND_FILE_COMMAND = "send ";
     std::vector<std::thread> threads;
     const std::string GET_FILE_COMMAND = "get ";
-    const std::string SEND_ACCEPT_RESPONSE = "send_accept";
-    const std::string GET_ACCEPT_RESPONSE = "get_accept";
+    const std::string GET_ACCEPT_RESPONSE = "get_accept ";
 public:
     std::string ManageCommand(std::string command, ClientInfo* info);
     std::string getHomePath() { return server_home_path; }
@@ -58,5 +57,5 @@ private:
     bool isDirectory(std::string path);
     bool isFile(std::string path);
     bool isFileAlreadyOnServer(std::string path);
-    int createServerSocket(int port);
+    int createServerSocket();
 };

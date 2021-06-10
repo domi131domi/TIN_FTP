@@ -25,8 +25,8 @@ public:
   long getFileSize(const std::string& fileName);
   int sendBuffer(int sock_fd, const char* buffer, int buffereSize, int chunkSize = 4 * 1024);
   long sendFile(int sock_fd, const std::string& fileName, int chunkSize = 64 * 1024);
-  void handleReceive(const std::string& fileName);
-  int createClientSocket(int port);
+  void handleReceive(uint16_t port, const std::string& fileName);
+  int createClientSocket(uint16_t port);
   int receiveBuffer(int sock_fd, char* buffer, int bufferSize, int chunkSize = 4 * 1024);
   long receiveFile(int sock_fd, const std::string& fileName, int chunkSize = 64 * 1024);
 };

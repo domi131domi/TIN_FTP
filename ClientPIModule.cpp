@@ -153,7 +153,7 @@ void ClientPIModule::ManageReply(std::string reply)
     }
 
     else if(reply.find(GET_ACCEPT_RESPONSE)) {
-        clientDTPModule->handleReceive(file_to_receive);
+        clientDTPModule->handleReceive(std::stoi(reply.substr(GET_ACCEPT_RESPONSE.length() ,reply.length())), file_to_receive);
     }
 }
 

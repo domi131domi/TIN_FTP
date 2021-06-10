@@ -20,7 +20,7 @@ class ClientPIModule
 {
 private:
 	const std::string SEND_ACCEPT_RESPONSE = "send_accept";
-	const std::string GET_ACCEPT_RESPONSE = "get_accept";
+	const std::string GET_ACCEPT_RESPONSE = "get_accept ";
 
 	int client_socket;
 	bool isLogged = false;

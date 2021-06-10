@@ -110,9 +110,9 @@ long ClientDTPModule::sendFile(int sock_fd, const string &fileName, int chunkSiz
   return 0;
 }
 
-void ClientDTPModule::handleReceive(const string &fileName)
+void ClientDTPModule::handleReceive(uint16_t port, const string &fileName)
 {
-  int sock_fd = createClientSocket(8082);
+  int sock_fd = createClientSocket(port);
 
   long rc = receiveFile(sock_fd, fileName);
   if (rc < 0) {
@@ -169,7 +169,7 @@ long ClientDTPModule::receiveFile(int sock_fd, const string& fileName, int chunk
     return isError ? FILE_RECEIVE_ERR : fileSize;
 }
 
-int ClientDTPModule::createClientSocket(int port) {
+int ClientDTPModule::createClientSocket(uint16_t port) {
 
   struct sockaddr_in serv_addr = {
       .sin_family = AF_INET,

@@ -254,24 +254,7 @@ std::string ServerDTPModule::CommandCreateAccount(std::string account, ClientInf
 
 
 string ServerDTPModule::CommandSend(const string& fileName, ClientInfo* clientInfo) {
-    int sock_fd;
-    struct sockaddr_in serv_addr;
-    int port = 0;
-    const int ONE_CONNECTION = 1;
-
-    if ((sock_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-        perror("DTP module failed to create a socket");
-        return nullptr;
-    };
-
-    serv_addr.sin_family = AF_INET;
-    serv_addr.sin_addr.s_addr = INADDR_ANY;
-    serv_addr.sin_port = htons(port);
-
-    if (bind(sock_fd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
-        perror("DTP module failed to bind address to socket");
-        return nullptr;
-    }
+    int sock_fd = createServerSocket();
 
     struct sockaddr_in add;
     size_t add_len = sizeof(add);
@@ -280,8 +263,6 @@ string ServerDTPModule::CommandSend(const string& fileName, ClientInfo* clientIn
         perror("DTP modeule failed binding socket");
         return nullptr;
     }
-
-    listen(sock_fd, ONE_CONNECTION);
 
     const string fullFilePath = original_path + clientInfo->currentRelativePath + fileName;
     threads.push_back(thread(&ServerDTPModule::handleReceive, this, sock_fd, fullFilePath));
@@ -384,15 +365,23 @@ long ServerDTPModule::receiveFile(int sock_fd, const string& fileName, int chunk
 }
 
 string ServerDTPModule::CommandGet(const string& fileName, ClientInfo* clientInfo) {
-    int sock_fd = createServerSocket(8082);
+    int sock_fd = createServerSocket();
     if (sock_fd < 0) {
         return "error Could not create server socket";
+    }
+
+    struct sockaddr_in add;
+    size_t add_len = sizeof(add);
+    if(getsockname(sock_fd, (struct sockaddr *)&add,  (socklen_t*) &add_len) != 0)
+    {
+        perror("DTP modeule failed binding socket");
+        return nullptr;
     }
 
     const string fullFilePath = original_path + clientInfo->currentRelativePath + fileName;
     threads.push_back(thread(&ServerDTPModule::proceedSend, this, sock_fd, fullFilePath));
     
-    return GET_ACCEPT_RESPONSE + ';' + fileName;
+    return GET_ACCEPT_RESPONSE + std::to_string(add.sin_port);
 }
 
 int ServerDTPModule::proceedSend(int sock_fd, string fileName) {
@@ -430,36 +419,35 @@ bool ServerDTPModule::isFile(std::string path)
     return fs::is_regular_file(fs::status(path));
 }
 
-int ServerDTPModule::createServerSocket(int port) {
+int ServerDTPModule::createServerSocket() {
     int sock_fd;
     struct sockaddr_in serv_addr;
+    int port = 0;
     const int ONE_CONNECTION = 1;
 
-    if ((sock_fd = socket(AF_INET, SOCK_STREAM, 0 )) < 0) {
+    if ((sock_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
         perror("DTP module failed to create a socket");
         return -1;
     };
+
 
     int opt = 1;
     if (setsockopt(sock_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt)))
     {
         perror("Setting options error");
-        return false;
+        return -1;
     }
-
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_addr.s_addr = INADDR_ANY;
     serv_addr.sin_port = htons(port);
 
-    int res = bind(sock_fd, (struct sockaddr *) &serv_addr, sizeof(serv_addr));
-    if (res < 0) {
-        cout << res << endl;
+    if (bind(sock_fd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
         perror("DTP module failed to bind address to socket");
         return -1;
     }
 
     listen(sock_fd, ONE_CONNECTION);
-
+    
     return sock_fd;
 }
 
