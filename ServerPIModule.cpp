@@ -21,6 +21,7 @@ bool ServerPIModule::Start()
             RegisterUsername(t.substr(9, t.length()));
 
     }
+    return true;
 }
 
 bool ServerPIModule::Read(int socket)
