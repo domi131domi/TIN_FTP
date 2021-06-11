@@ -38,5 +38,4 @@ private:
 	void ManageCommand(int socket,std::string command);
 	void RegisterUsername(std::string username);
 
-
 };

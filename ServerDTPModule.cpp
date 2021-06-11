@@ -8,45 +8,46 @@ using std::string;
 using std::thread;
 using std::min;
 using std::ofstream;
+using std::ifstream;
 using std::cout;
 using std::endl;
 
 std::string ServerDTPModule::ManageCommand(std::string command, ClientInfo* info)
 {
     std::cout << "Managing command " << command << std::endl;
-    if(command == "ls")
+    if(command == LS)
     {
         return CommandLs(info);
     }
 
-    if(command.find("cd ") == 0)
+    if(command.find(CD) == 0)
     {
-        return CommandCd(command.substr(3, command.length()), info);
+        return CommandCd(command.substr(CD.length(), command.length()), info);
     }
 
-    if(command.find("login ") == 0)
+    if(command.find(LOGIN) == 0)
     {
-        return CommandLogin(command.substr(6, command.length()), info);
+        return CommandLogin(command.substr(LOGIN.length(), command.length()), info);
     }
 
-    if(command.find("log me ") == 0)
+    if(command.find(LOGME) == 0)
     {
-        return CommandLogMe(command.substr(7, command.length()), info);
+        return CommandLogMe(command.substr(LOGME.length(), command.length()), info);
     }
 
-    if(command == "logout")
+    if(command == LOGOUT)
     {
         return CommandLogout(info);
     }
 
-    if(command == "sign")
+    if(command == SIGN)
     {
         return CommandSignin();
     }
 
-    if(command.find("new account ") == 0)
+    if(command.find(NEW_ACC) == 0)
     {
-        return CommandCreateAccount(command.substr(12, command.length()), info);
+        return CommandCreateAccount(command.substr(NEW_ACC.length(), command.length()), info);
     }
 
     if(command.find(SEND_FILE_COMMAND) == 0) {
@@ -57,16 +58,19 @@ std::string ServerDTPModule::ManageCommand(std::string command, ClientInfo* info
         return CheckIfFileExists(command);
     }
 
-    if(command.find("mkdir ") == 0)
+    if(command.find(MAKEDIR) == 0)
     {
-        return CommandMkdir(command.substr(6, command.length()), info);
-    }
- 
-    if(command.find("rm ") == 0)
-    {
-        return CommandRm(command.substr(3, command.length()), info);
+        return CommandMkdir(command.substr(MAKEDIR.length(), command.length()), info);
     }
 
+    if(command.find(RM) == 0)
+    {
+        return CommandRm(command.substr(RM.length(), command.length()), info);
+    }
+
+    if (command.find(GET_FILE_COMMAND) == 0) {
+        return CommandGet(command.substr(GET_FILE_COMMAND.length(), command.length()), info);
+    }
     return "error command unknown";
 }
 
@@ -152,7 +156,7 @@ std::string ServerDTPModule::CommandLogin(std::string username, ClientInfo* info
     clientsData.close();
     clientsData.open(server_home_path + "RegistrationRequests.txt", std::fstream::in);
         while(clientsData >> login)
-    { 
+    {
         if(login == username)
         {
             clientsData.close();
@@ -222,7 +226,6 @@ std::string ServerDTPModule::CommandCreateAccount(std::string account, ClientInf
     std::string tmp;
     while(clientsData >> tmp)
     {
-        //std::cout << tmp << "yy" << std::endl;
         if(tmp == username){
             clientsData.close();
             return "error An user with this username already exists!";
@@ -234,7 +237,6 @@ std::string ServerDTPModule::CommandCreateAccount(std::string account, ClientInf
     clientsData.open(server_home_path + "RegistrationRequests.txt", std::fstream::in);
     while(clientsData >> tmp)
     {
-        //std::cout << tmp << "yy" << std::endl;
         if(tmp == username){
             return "error An user with this username already exists!";
         }
@@ -249,26 +251,8 @@ std::string ServerDTPModule::CommandCreateAccount(std::string account, ClientInf
 }
 
 
-string ServerDTPModule::CommandSend(string fileName, ClientInfo* clientInfo) {
-    int sock_fd;
-    struct sockaddr_in serv_addr;
-    int port = 0;
-    const int ONE_CONNECTION = 1;
-
-    if ((sock_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-        perror("DTP module failed to create a socket");
-        return nullptr;
-    };
-
-    serv_addr.sin_family = AF_INET;
-    serv_addr.sin_addr.s_addr = INADDR_ANY;
-    serv_addr.sin_port = htons(port);
-
-    if (bind(sock_fd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
-        perror("DTP module failed to bind address to socket");
-        return nullptr;
-    }
-
+string ServerDTPModule::CommandSend(const string& fileName, ClientInfo* clientInfo) {
+    int sock_fd = createServerSocket();
     struct sockaddr_in add;
     size_t add_len = sizeof(add);
     if(getsockname(sock_fd, (struct sockaddr *)&add,  (socklen_t*) &add_len) != 0)
@@ -277,10 +261,13 @@ string ServerDTPModule::CommandSend(string fileName, ClientInfo* clientInfo) {
         return nullptr;
     }
 
-    listen(sock_fd, ONE_CONNECTION);
+    const string fullFilePath = original_path + clientInfo->currentRelativePath + fileName;
+    if( isDirectory(fullFilePath) ){
+        return "error Sending directories is forbidden";
+    }
 
-    threads.push_back(thread(&ServerDTPModule::handleReceive, this, sock_fd));
-    std::cout << sock_fd;
+    threads.push_back(thread(&ServerDTPModule::handleReceive, this, sock_fd, fullFilePath));
+
     return "ConnectTo " + std::to_string(add.sin_port);
 }
 
@@ -298,8 +285,40 @@ std::string ServerDTPModule::CommandMkdir(std::string folderName, ClientInfo* in
 }
 
 std::string ServerDTPModule::CommandRm(std::string removed, ClientInfo* info) {
-    std::uintmax_t n = fs::remove_all(original_path + info->currentRelativePath + removed);
-    return "show Removed " + std::to_string(n) + " files or directories.";
+    const string fullFilePath = original_path + info->currentRelativePath + removed;
+    if( isFile(fullFilePath) ){
+        std::string sha256 = FTP::SHA256(fullFilePath.c_str());
+        auto position = std::find(check_sums.begin(), check_sums.end(), sha256);
+        if( position != check_sums.end() ){
+            check_sums.erase( position );
+        }
+        fs::remove( fullFilePath );
+        return "show File was successfuly removed";
+    }
+
+    else if ( isDirectory(fullFilePath) ){
+        try {
+            for (auto file : fs::recursive_directory_iterator(fullFilePath)) {
+                std::string sha256 = FTP::SHA256(file.path().c_str());
+                auto position = std::find(check_sums.begin(), check_sums.end(), sha256);
+                if( position != check_sums.end() ){
+                    check_sums.erase( position );
+                }
+            }
+        } catch(const std::exception& e) {
+            std::cerr <<  e.what() << "\n";
+            return "error There was a problem during managing command";
+        }
+
+        std::uintmax_t n = fs::remove_all(fullFilePath);
+        return "show Removed " + std::to_string(n) + " files or directories.";
+    }
+
+    else{
+        return "error There is no such file in directory";
+    }
+
+
 }
 
 string ServerDTPModule::CheckIfFileExists(string client_sha_code){
@@ -311,77 +330,76 @@ string ServerDTPModule::CheckIfFileExists(string client_sha_code){
     return "file not on server";
 }
 
-void ServerDTPModule::handleReceive(int sock_fd) {
-        std::cout << sock_fd;
+void ServerDTPModule::handleReceive(int sock_fd, const string fileName) {
         printf("Waiting for connection...\n");
 
         struct sockaddr_in client_addr;
         size_t client_len = sizeof(client_addr);
-        std::cout << "nie yoo\n\n";
+
         int client_socket;
         if ((client_socket = accept(sock_fd, (struct sockaddr*) &client_addr, (socklen_t*) &client_len)) < 0) {
             perror("DTP failed while executing accept()");
         };
 
-        long rc = receiveFile(client_socket, "send.txt");
+        long rc = FTP::receiveFile(client_socket, fileName);
         if (rc < 0) {
             cout << "Failed to receive file: " << rc << endl;
         } else {
             cout << "File receive success";
+            check_sums.push_back( FTP::SHA256(fileName.c_str()) );
         }
 
-
-        std::cout << "yoooo\n\n";
-        shutdown(client_socket, SHUT_RDWR);
-        shutdown(sock_fd, SHUT_RDWR);
         close(client_socket);
         close(sock_fd);
 }
 
-int ServerDTPModule::receiveBuffer(int sock_fd, char* buffer, int bufferSize, int chunkSize) {
-    int i = 0;
-    while (i < bufferSize) {
-        const int l = recv(sock_fd, &buffer[i], min(chunkSize, bufferSize - i), 0);
-        if (l < 0) {
-            return -1;
-        }
-        i += l;
+string ServerDTPModule::CommandGet(const string& fileName, ClientInfo* clientInfo) {
+    int sock_fd = createServerSocket();
+    if (sock_fd < 0) {
+        return "error Could not create server socket";
     }
 
-    return 1;
+    const string fullFilePath = original_path + clientInfo->currentRelativePath + fileName;
+    if( isDirectory(fullFilePath) ){
+        return "error Getting directories is forbidden";
+    }
+
+    struct sockaddr_in add;
+    size_t add_len = sizeof(add);
+    if(getsockname(sock_fd, (struct sockaddr *)&add,  (socklen_t*) &add_len) != 0)
+    {
+        perror("DTP modeule failed binding socket");
+        return nullptr;
+    }
+
+
+    threads.push_back(thread(&ServerDTPModule::proceedSend, this, sock_fd, fullFilePath));
+
+    return GET_ACCEPT_RESPONSE + std::to_string(add.sin_port);
 }
 
-long ServerDTPModule::receiveFile(int sock_fd, const string& fileName, int chunkSize) {
-    ofstream file(fileName, ofstream::out);
-    if (file.fail()) {
-        return FILE_OPEN_ERR;
-    }
+void ServerDTPModule::proceedSend(int sock_fd, string fileName) {
+        printf("Waiting for connection...\n");
 
-    long fileSize;
-    if (receiveBuffer(sock_fd,
-                      reinterpret_cast<char*>(&fileSize),
-                      sizeof(fileSize)) != sizeof(fileSize)) {
-        return FILE_LENGTH_RECV_ERR;
-    }
+        struct sockaddr_in client_addr;
+        size_t client_len = sizeof(client_addr);
 
-    cout << "jest" << endl;
+        int client_socket;
+        if ((client_socket = accept(sock_fd, (struct sockaddr*) &client_addr, (socklen_t*) &client_len)) < 0) {
+            perror("DTP failed while executing accept()");
+        };
 
-    char* buffer = new char[chunkSize];
-    bool isError = false;
-    long i = fileSize;
-    while (i != 0) {
-        const int r = receiveBuffer(sock_fd, buffer, (int) min(i, (long) chunkSize));
-        if ((r < 0) || !file.write(buffer, r)) {
-            isError = true;
-            break;
+        long rc = FTP::sendFile(client_socket, fileName);
+        if (rc < 0) {
+            cout << "Failed to send file: " << rc << endl;
         }
-        i -= r;
-    }
-    delete[] buffer;
 
-    file.close();
+        cout << "Sending file done" << endl;
 
-    return isError ? FILE_RECEIVE_ERR : fileSize;
+        close(client_socket);
+        close(sock_fd);
+
+        cout << "Sending file done2" << endl;
 }
 
 bool ServerDTPModule::isDirectory(std::string path)
@@ -392,4 +410,36 @@ bool ServerDTPModule::isDirectory(std::string path)
 bool ServerDTPModule::isFile(std::string path)
 {
     return fs::is_regular_file(fs::status(path));
+}
+
+int ServerDTPModule::createServerSocket() {
+    int sock_fd;
+    struct sockaddr_in serv_addr;
+    int port = 0;
+    const int ONE_CONNECTION = 1;
+
+    if ((sock_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+        perror("DTP module failed to create a socket");
+        return -1;
+    };
+
+
+    int opt = 1;
+    if (setsockopt(sock_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt)))
+    {
+        perror("Setting options error");
+        return -1;
+    }
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_addr.s_addr = INADDR_ANY;
+    serv_addr.sin_port = htons(port);
+
+    if (bind(sock_fd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
+        perror("DTP module failed to bind address to socket");
+        return -1;
+    }
+
+    listen(sock_fd, ONE_CONNECTION);
+
+    return sock_fd;
 }
