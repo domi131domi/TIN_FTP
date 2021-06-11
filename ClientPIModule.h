@@ -19,12 +19,27 @@
 class ClientPIModule
 {
 private:
+	const std::string SEND_ACCEPT_RESPONSE = "send_accept";
+	const std::string GET_ACCEPT_RESPONSE = "get_accept ";
+	const std::string SET_PATH = "setPath ";
+	const std::string SHOW = "show ";
+	const std::string SEND_PASS = "send password ";
+	const std::string LOGIN_RES = "login result ";
+	const std::string LOGOUT_RES = "logout result ";
+	const std::string SIGN_IN = "signin";
+	const std::string CONNECT_TO = "ConnectTo ";
+	const std::string ERROR = "error ";
+
 	int client_socket;
 	bool isLogged = false;
 	std::string current_path = "~/";
 	ClientDTPModule* clientDTPModule;
 
 	const std::string SEND_FILE_COMMAND = "send ";
+	const std::string GET_FILE_COMMAND = "get ";
+
+	std::string file_to_send;
+	std::string file_to_receive;
 public:
 	bool isRunning = false;
 	void Stop();

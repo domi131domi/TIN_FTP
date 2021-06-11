@@ -18,7 +18,7 @@ int main(int argc, char const *argv[])
     if( !client.isRunning )
         return 0;
 
-    ClientDTPModule dtp(port);
+    ClientDTPModule dtp(argv[1],port);
     client.connectToDTP(&dtp);
     std::string text = "";
     std::cout <<

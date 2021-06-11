@@ -8,19 +8,16 @@
 #include <unistd.h>
 #include <fstream>
 
-#define SERVER_IP "127.0.0.1"
-#define FILE_OPEN_ERR -1
-#define FILE_LENGTH_READ_ERR -2
-#define FILE_SEND_ERR -3
+//#define SERVER_IP "127.0.0.1"
 
 class ClientDTPModule
 {
 private:
   const int SERVER_PORT;
+  std::string SERVER_IP;
 public:
-  ClientDTPModule(const int port) : SERVER_PORT(port){}
-  void proceedSend(uint16_t port);
-  long getFileSize(const std::string& fileName);
-  int sendBuffer(int sock_fd, const char* buffer, int buffereSize, int chunkSize = 4 * 1024);
-  long sendFile(int sock_fd, const std::string& fileName, int chunkSize = 64 * 1024);
+  ClientDTPModule(std::string ip, const int port) : SERVER_PORT(port), SERVER_IP(ip){ }
+  void proceedSend(uint16_t port, const std::string& fileName);
+  void handleReceive(uint16_t port, const std::string& fileName);
+  int createClientSocket(uint16_t port);
 };
