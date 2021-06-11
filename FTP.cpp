@@ -74,7 +74,7 @@ int FTP::receiveBuffer(int sock_fd, char* buffer, int bufferSize, int chunkSize)
         }
         i += l;
     }
-    
+
     return i;
 }
 
@@ -85,8 +85,8 @@ long FTP::receiveFile(int sock_fd, const string& fileName, int chunkSize) {
     }
 
     long fileSize;
-    if (receiveBuffer(sock_fd, 
-                      reinterpret_cast<char*>(&fileSize), 
+    if (receiveBuffer(sock_fd,
+                      reinterpret_cast<char*>(&fileSize),
                       sizeof(fileSize)) != sizeof(fileSize)) {
         return FILE_LENGTH_RECV_ERR;
     }
@@ -111,7 +111,6 @@ long FTP::receiveFile(int sock_fd, const string& fileName, int chunkSize) {
 
 bool FTP::Send(const int socket, std::string message){
     int val = send(socket, message.c_str(), message.length() * sizeof(char), 0);
-    std::cout<<val<<"\n";
     if(val < 0)
     {
         std::cout << "Connection lost" << std::endl;
@@ -125,7 +124,6 @@ bool FTP::Send(const int socket, std::string message){
 std::string FTP::Read(const int socket){
     char Replymsg[REPLYSIZE];
     int val = read(socket, Replymsg, REPLYSIZE);
-    std::cout<<val<<"\n";
     if(val < 0)
     {
         std::cout << "Connection lost" << std::endl;

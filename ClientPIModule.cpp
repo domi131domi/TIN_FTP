@@ -41,7 +41,7 @@ bool ClientPIModule::SendCommand(std::string msg)
     if( msg.find(SEND_FILE_COMMAND) == 0 ) {
         if (isFileAlreadyOnServer(msg) )
             return true;
-        
+
         file_to_send = msg.substr(SEND_FILE_COMMAND.length(), msg.length());
     }
 
@@ -99,45 +99,45 @@ void ClientPIModule::Close()
 
 void ClientPIModule::ManageReply(std::string reply)
 {
-    if(reply.find("setPath ") == 0)
+    if(reply.find(SET_PATH) == 0)
     {
-        current_path = "~/" + reply.substr(8, reply.length());
+        current_path = "~/" + reply.substr(SET_PATH.length(), reply.length());
     }
-    else if(reply.find("error ") == 0)
+    else if(reply.find(ERROR) == 0)
     {
-        std::cout << reply.substr(6, reply.length()) << std::endl;
+        std::cout << reply.substr(ERROR.length(), reply.length()) << std::endl;
     }
-    else if(reply.find("show ") == 0)
+    else if(reply.find(SHOW) == 0)
     {
-        std::cout << reply.substr(5, reply.length()) << std::endl;
+        std::cout << reply.substr(SHOW.length(), reply.length()) << std::endl;
     }
-    else if(reply.find("send password ") == 0)
+    else if(reply.find(SEND_PASS) == 0)
     {
         //std::cout << "oooj bedzie logowane " << std::endl;
         if(isLogged)
             std::cout << "You are already logged in." << std::endl;
         else
         {
-            std::string username = reply.substr(14, reply.length());
+            std::string username = reply.substr(SEND_PASS.length(), reply.length());
             std::cout << "password: ";
             std::string typedPassword;
             getline(std::cin, typedPassword);
             SendCommand("log me " + username + "\n" + typedPassword);
         }
     }
-    else if(reply.find("login result ") == 0)
+    else if(reply.find(LOGIN_RES) == 0)
     {
-        std::string answer = reply.substr(13, reply.length());
+        std::string answer = reply.substr(LOGIN_RES.length(), reply.length());
         if(answer == "You have been logged in successfully!")
             isLogged = true;
         std::cout << answer << std::endl;
     }
-    else if(reply.find("logout result ") == 0)
+    else if(reply.find(LOGOUT_RES) == 0)
     {
         isLogged = false;
-        std::cout << reply.substr(14, reply.length()) << std::endl;
+        std::cout << reply.substr(LOGOUT_RES.length(), reply.length()) << std::endl;
     }
-    else if(reply == "signin")
+    else if(reply == SIGN_IN)
     {
         std::string username;
         std::string password;
@@ -148,8 +148,8 @@ void ClientPIModule::ManageReply(std::string reply)
         SendCommand("new account " + username + "\n" + password);
     }
 
-    else if(reply.find("ConnectTo ") == 0) {
-        clientDTPModule->proceedSend(std::stoi(reply.substr(10,reply.length())), file_to_send);
+    else if(reply.find(CONNECT_TO) == 0) {
+        clientDTPModule->proceedSend(std::stoi(reply.substr(CONNECT_TO.length(),reply.length())), file_to_send);
     }
 
     else if(reply.find(GET_ACCEPT_RESPONSE) == 0) {

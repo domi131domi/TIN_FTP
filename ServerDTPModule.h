@@ -23,6 +23,15 @@ private:
     std::vector<std::thread> threads;
     const std::string GET_FILE_COMMAND = "get ";
     const std::string GET_ACCEPT_RESPONSE = "get_accept ";
+    const std::string LS = "ls";
+    const std::string CD = "cd ";
+    const std::string LOGIN = "login ";
+    const std::string LOGME = "log me ";
+    const std::string LOGOUT = "logout";
+    const std::string SIGN = "sign";
+    const std::string NEW_ACC = "new account ";
+    const std::string MAKEDIR = "mkdir ";
+    const std::string RM = "rm ";
 public:
     std::string ManageCommand(std::string command, ClientInfo* info);
     std::string getHomePath() { return server_home_path; }

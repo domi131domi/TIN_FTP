@@ -15,39 +15,39 @@ using std::endl;
 std::string ServerDTPModule::ManageCommand(std::string command, ClientInfo* info)
 {
     std::cout << "Managing command " << command << std::endl;
-    if(command == "ls")
+    if(command == LS)
     {
         return CommandLs(info);
     }
 
-    if(command.find("cd ") == 0)
+    if(command.find(CD) == 0)
     {
-        return CommandCd(command.substr(3, command.length()), info);
+        return CommandCd(command.substr(CD.length(), command.length()), info);
     }
 
-    if(command.find("login ") == 0)
+    if(command.find(LOGIN) == 0)
     {
-        return CommandLogin(command.substr(6, command.length()), info);
+        return CommandLogin(command.substr(LOGIN.length(), command.length()), info);
     }
 
-    if(command.find("log me ") == 0)
+    if(command.find(LOGME) == 0)
     {
-        return CommandLogMe(command.substr(7, command.length()), info);
+        return CommandLogMe(command.substr(LOGME.length(), command.length()), info);
     }
 
-    if(command == "logout")
+    if(command == LOGOUT)
     {
         return CommandLogout(info);
     }
 
-    if(command == "sign")
+    if(command == SIGN)
     {
         return CommandSignin();
     }
 
-    if(command.find("new account ") == 0)
+    if(command.find(NEW_ACC) == 0)
     {
-        return CommandCreateAccount(command.substr(12, command.length()), info);
+        return CommandCreateAccount(command.substr(NEW_ACC.length(), command.length()), info);
     }
 
     if(command.find(SEND_FILE_COMMAND) == 0) {
@@ -58,14 +58,14 @@ std::string ServerDTPModule::ManageCommand(std::string command, ClientInfo* info
         return CheckIfFileExists(command);
     }
 
-    if(command.find("mkdir ") == 0)
+    if(command.find(MAKEDIR) == 0)
     {
-        return CommandMkdir(command.substr(6, command.length()), info);
+        return CommandMkdir(command.substr(MAKEDIR.length(), command.length()), info);
     }
- 
-    if(command.find("rm ") == 0)
+
+    if(command.find(RM) == 0)
     {
-        return CommandRm(command.substr(3, command.length()), info);
+        return CommandRm(command.substr(RM.length(), command.length()), info);
     }
 
     if (command.find(GET_FILE_COMMAND) == 0) {
@@ -156,7 +156,7 @@ std::string ServerDTPModule::CommandLogin(std::string username, ClientInfo* info
     clientsData.close();
     clientsData.open(server_home_path + "RegistrationRequests.txt", std::fstream::in);
         while(clientsData >> login)
-    { 
+    {
         if(login == username)
         {
             clientsData.close();
@@ -226,7 +226,6 @@ std::string ServerDTPModule::CommandCreateAccount(std::string account, ClientInf
     std::string tmp;
     while(clientsData >> tmp)
     {
-        //std::cout << tmp << "yy" << std::endl;
         if(tmp == username){
             clientsData.close();
             return "error An user with this username already exists!";
@@ -238,7 +237,6 @@ std::string ServerDTPModule::CommandCreateAccount(std::string account, ClientInf
     clientsData.open(server_home_path + "RegistrationRequests.txt", std::fstream::in);
     while(clientsData >> tmp)
     {
-        //std::cout << tmp << "yy" << std::endl;
         if(tmp == username){
             return "error An user with this username already exists!";
         }
@@ -306,7 +304,7 @@ std::string ServerDTPModule::CommandRm(std::string removed, ClientInfo* info) {
                 if( position != check_sums.end() ){
                     check_sums.erase( position );
                 }
-            }    
+            }
         } catch(const std::exception& e) {
             std::cerr <<  e.what() << "\n";
             return "error There was a problem during managing command";
@@ -320,7 +318,7 @@ std::string ServerDTPModule::CommandRm(std::string removed, ClientInfo* info) {
         return "error There is no such file in directory";
     }
 
-    
+
 }
 
 string ServerDTPModule::CheckIfFileExists(string client_sha_code){
@@ -374,9 +372,9 @@ string ServerDTPModule::CommandGet(const string& fileName, ClientInfo* clientInf
         return nullptr;
     }
 
-    
+
     threads.push_back(thread(&ServerDTPModule::proceedSend, this, sock_fd, fullFilePath));
-    
+
     return GET_ACCEPT_RESPONSE + std::to_string(add.sin_port);
 }
 
@@ -395,7 +393,7 @@ void ServerDTPModule::proceedSend(int sock_fd, string fileName) {
         if (rc < 0) {
             cout << "Failed to send file: " << rc << endl;
         }
-        
+
         cout << "Sending file done" << endl;
 
         close(client_socket);
@@ -442,6 +440,6 @@ int ServerDTPModule::createServerSocket() {
     }
 
     listen(sock_fd, ONE_CONNECTION);
-    
+
     return sock_fd;
 }
