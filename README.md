@@ -33,4 +33,4 @@ Komendy klienta:
 - send <filename> – wysyłanie zadanego pliku na serwer  
 - get <filename> – pobieranie pliku z zadanego kontekstu  
 
-Uwaga: prośbę o założenie konta należy zatwierdzić na serwerze komendą register <username>, wówczas dopiero można się zalogować
+Uwaga: prośbę o założenie konta należy zatwierdzić na serwerze komendą register username, wówczas dopiero można się zalogować
