@@ -54,15 +54,14 @@ long FTP::sendFile(int sock_fd, const string &fileName, int chunkSize) {
     if (l < 0) {
       isError = true;
       break;
-      i -= l;
     }
-    delete[] buffer;
-
-    file.close();
-    return isError ? FILE_SEND_ERR : fileSize;
+    i -= l;
   }
 
-  return 0;
+  delete[] buffer;
+
+  file.close();
+  return isError ? FILE_SEND_ERR : fileSize;
 }
 
 int FTP::receiveBuffer(int sock_fd, char* buffer, int bufferSize, int chunkSize) {
