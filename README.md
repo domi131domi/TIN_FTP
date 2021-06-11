@@ -1,5 +1,5 @@
-## _**Techniki internetowe**_ ##  
-##### Projekt dotyczący implementacji klienta i serwera wymieniających pliki za pomocą protokołu FTP.  
+# _**Techniki internetowe**_ ##  
+### Projekt dotyczący implementacji klienta i serwera wymieniających pliki za pomocą protokołu FTP.  
 Autorzy:
 Dominik Szacilowski,
 Adam Stec,
